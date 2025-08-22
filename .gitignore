@@ -1,0 +1,23 @@
+# Bytecode and Caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environments
+venv/
+.venv/
+env/
+.env/
+venv.bak/
+.env.bak/
+
+# Secrets - CRITICAL
+.env
+
+# IDE / Editor Files
+.vscode/
+.idea/
+
+# Operating System Files
+.DS_Store
