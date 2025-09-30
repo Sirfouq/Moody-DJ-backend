@@ -33,7 +33,7 @@ def authorize_user_request():
 
 def request_api_token_request(code : str , redirect_uri : str):
     auth_string = f'{CLIENT_ID}:{CLIENT_SECRET}'
-    print(auth_string)
+    # print(auth_string)
     auth_bytes = auth_string.encode('utf-8')
     auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
     url = 'https://accounts.spotify.com/api/token'
@@ -47,5 +47,24 @@ def request_api_token_request(code : str , redirect_uri : str):
         'code' : code,
         'redirect_uri' : redirect_uri
     }
+    req = requests.post(url=url,headers=headers,data=body)
+    return req.json()
+
+def refresh_api_token_request(refresh_token :str):
+    auth_string = f'{CLIENT_ID}:{CLIENT_SECRET}'
+    # print(auth_string)
+    auth_bytes = auth_string.encode('utf-8')
+    auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
+    url = 'https://accounts.spotify.com/api/token'
+    headers = {
+        'Authorization': f'Basic {auth_base64}',
+        'Content-Type' : 'application/x-www-form-urlencoded' 
+    }
+
+    body = {
+        'grant_type':'refresh_token',
+        'refresh_token' : refresh_token
+    }
+
     req = requests.post(url=url,headers=headers,data=body)
     return req.json()

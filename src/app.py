@@ -1,7 +1,8 @@
 import os
 import requests
-from flask import Flask,jsonify,request,redirect,render_template ,session
-from spotify_api_comm import spotify_client_access_token,authorize_user_request,request_api_token_request
+import time
+from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
+from spotify_api_comm import spotify_client_access_token,authorize_user_request,request_api_token_request,refresh_api_token_request
 
 app = Flask(__name__)
 
@@ -14,6 +15,32 @@ def home():
 # @app.route('/api/login', methods = ['POST'])
 # def login():
 #     return jsonify({"message": "{Login successful!}"})
+@app.route('/api/auth/status')
+def status_check():
+    token_info = session.get('token_info')
+    if not token_info:
+        return redirect(url_for('home'))
+    now = time.time()
+    is_expired = token_info.get('expires_at',0) < now
+    if(is_expired):
+        refresh_token = token_info.get('refresh_token')
+        refresh_token_request = refresh_api_token_request(refresh_token=refresh_token)
+        try:
+            session['token_info'] = {
+            'access_token' : refresh_token_request.get('access_token'),
+            'expires_at' : now + refresh_token_request.get('expires_in'),
+            'scope' : refresh_token_request.get('scope'),
+            'refresh_token': refresh_token_request.get('refresh_token') or token_info.get('refresh_token')
+            }
+            return jsonify({'message': 'Token has been refreshed successfully.'})
+        except:
+            session.clear()
+            return render_template('error.html')
+    return jsonify({'message':'You are logged in and your token is valid!'})
+            
+
+    
+
 
 
 @app.route('/api/artists/<artist_id>',methods = ['GET'])
@@ -29,10 +56,9 @@ def login():
     auth_url = authorize_user_request()
     return redirect(auth_url)
 
-# if __name__ == '__main__':
-#     app.run(debug=True, port=5000)
 
-@app.route('/api/callback')
+
+@app.route('/api/callback',methods = ['GET'])
 def callback():
     error = request.args.get('error')
     state = request.args.get('state')
@@ -41,14 +67,16 @@ def callback():
          return render_template('error.html')
     elif code:
         req = request_api_token_request(code=code,redirect_uri='http://127.0.0.1:5000/api/callback')
-        session['token_obj'] = {
+        session['token_info'] = {
             'access_token' : req.get('access_token'),
-            'expires_in' : req.get('expires_in'),
-            'scope' : req.get('scope')
+            'expires_at' :time.time() +req.get('expires_in'),
+            'scope' : req.get('scope'),
+            'refresh_token' : req.get('refresh_token')
         }
-        
-        return jsonify('Stored token :', session['token_obj'])
+        print({'Stored token' : session['token_info']})
+        return redirect(url_for('status_check'))
     
-    
+if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=5000)    
         
        
