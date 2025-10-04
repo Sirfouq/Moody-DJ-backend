@@ -2,9 +2,11 @@ import os
 import requests
 import time
 from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
+from flask_cors import CORS
 from spotify_api_comm import spotify_client_access_token,authorize_user_request,request_api_token_request,refresh_api_token_request
 
 app = Flask(__name__)
+CORS(app=app)
 
 app.secret_key = os.getenv('SECRET_KEY')
 
@@ -36,7 +38,7 @@ def status_check():
         except:
             session.clear()
             return render_template('error.html')
-    return jsonify({'message':'You are logged in and your token is valid!'})
+    return jsonify({'status':'200','message':'You are logged in and your token is valid!'})
             
 
     
