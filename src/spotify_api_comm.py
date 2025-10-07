@@ -21,12 +21,21 @@ def spotify_client_access_token():
     return req.json()['access_token']
 
 def authorize_user_request():
+    scopes = ['playlist-read-private',
+        ' playlist-modify-private',
+        ' playlist-modify-public',
+        'streaming',
+        'user-read-playback-state',
+        'user-modify-playback-state',
+        'user-read-currently-playing',
+]
     url = 'https://accounts.spotify.com/authorize'
     params = {
         'client_id': CLIENT_ID,
         'redirect_uri': 'http://127.0.0.1:5000/api/callback',
         'response_type': 'code',
-        'scope': 'playlist-modify-private playlist-modify-public'
+        'scope': ' '.join(scopes)
+
     }
     auth_url = f"{url}?{urllib.parse.urlencode(params)}"
     return auth_url
