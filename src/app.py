@@ -18,9 +18,6 @@ app.secret_key = os.getenv('SECRET_KEY')
 def home():
     return render_template('basic_login.html')
 
-# @app.route('/api/login', methods = ['POST'])
-# def login():
-#     return jsonify({"message": "{Login successful!}"})
 @app.route('/api/auth/status')
 def status_check():
     token_info = session.get('token_info')
@@ -39,7 +36,7 @@ def status_check():
             'refresh_token': refresh_token_request.get('refresh_token') or token_info.get('refresh_token')
             }
             return jsonify({"isLoggedIn": True})
-            
+                
         except:
             session.clear()
             return jsonify({"isLoggedIn": False})
