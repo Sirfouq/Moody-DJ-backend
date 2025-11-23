@@ -1,0 +1,2 @@
+1. Run the backend by pressing the 'Run and debug button ' assuming a launch.json is present.
+2. Run the frontend by typing this command on terminal 'npm run dev -- --host 127.0.0.1'
