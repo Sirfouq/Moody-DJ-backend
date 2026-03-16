@@ -1,4 +1,4 @@
-from src.openai_api_comm import openAI_searchquery_layer
+from src.openai_api_comm import searchquery_playlist_layer
 from src.spotify_api_comm import spotify_client_access_token
 import json
 
@@ -8,18 +8,18 @@ def test_openai_integration():
  
     print("\n--- Test Case 1----")
     try:
-        result = openAI_searchquery_layer(user_input="Uplifting house afro", genre='techno')
+        result = searchquery_playlist_layer(user_input="Upbeat", genre='', artist='Francis Mercier')
         print(f"Result: {result}")
     except Exception as e:
         print(f"Error: {e}")
 
     
-    print("\n--- Test Case 2: 'Techno' text with 'Country' genre ---")
-    try:
-        result = openAI_searchquery_layer(user_input="Techno", genre="country")
-        print(f"Result: {result}")
-    except Exception as e:
-        print(f"Error: {e}")
+    # print("\n--- Test Case 2: 'Techno' text with 'Country' genre ---")
+    # try:
+    #     result = openAI_searchquery_layer(user_input="Techno", genre="country")
+    #     print(f"Result: {result}")
+    # except Exception as e:
+    #     print(f"Error: {e}")
 
 if __name__ == "__main__":
     test_openai_integration()
