@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Literal, List
 
 
@@ -6,7 +6,7 @@ class SearchQuery(BaseModel):
     q: str
     type: str = 'track'
     market: Optional[str] = None
-    limit: int = 10
+    limit: int = Field(default=5, ge=1, le=10)
     offset: int = 0
     include_external: Optional[str] = None
 

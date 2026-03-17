@@ -22,12 +22,13 @@ def spotify_client_access_token():
 
 def authorize_user_request():
     scopes = ['playlist-read-private',
-        ' playlist-modify-private',
-        ' playlist-modify-public',
+        'playlist-modify-private',
+        'playlist-modify-public',
         'streaming',
         'user-read-playback-state',
         'user-modify-playback-state',
         'user-read-currently-playing',
+        'user-top-read',
 ]
     url = 'https://accounts.spotify.com/authorize'
     params = {
