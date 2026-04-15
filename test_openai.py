@@ -1,5 +1,5 @@
-from src.openai_api_comm import searchquery_playlist_layer
-from src.spotify_api_comm import spotify_client_access_token
+from src.openai_api_comm import search_query_layer
+from src.spotify_api_comm import access_client_token
 import json
 
 def test_openai_integration():
@@ -8,7 +8,7 @@ def test_openai_integration():
  
     print("\n--- Test Case 1----")
     try:
-        result = searchquery_playlist_layer(user_input="Upbeat", genre='', artist='Francis Mercier')
+        result = search_query_layer(user_input="No lyrics , house beat , focus", genre='', artist='')
         print(f"Result: {result}")
     except Exception as e:
         print(f"Error: {e}")

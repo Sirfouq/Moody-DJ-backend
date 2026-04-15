@@ -2,11 +2,15 @@ import os
 import requests
 import urllib.parse
 import base64
+import time
+from flask import session
+from src.util.searchQueryModel import SearchQuery
+from openai_api_comm import search_query_layer
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 
 
-def spotify_client_access_token():
+def access_client_token():
     
     url = 'https://accounts.spotify.com/api/token'
     headers = {
@@ -78,3 +82,29 @@ def refresh_api_token_request(refresh_token :str):
 
     req = requests.post(url=url,headers=headers,data=body)
     return req.json()
+
+def request_generated_list(spotify_tracks_list : list[SearchQuery]):
+    pass
+    
+
+
+def check_status():
+    token_info = session.get('token_info')
+    if not token_info:
+        return None
+    now = time.time()
+    is_expired = token_info.get('expires_at',0) < now
+    if(is_expired):
+        refresh_token = token_info.get('refresh_token')
+        try:
+            refresh_token_request = refresh_api_token_request(refresh_token=refresh_token)
+            session['token_info'] = {
+            'access_token' : refresh_token_request.get('access_token'),
+            'expires_at' : now + refresh_token_request.get('expires_in'),
+            'scope' : refresh_token_request.get('scope'),
+            'refresh_token': refresh_token_request.get('refresh_token') or token_info.get('refresh_token')
+            }   
+        except:
+            session.clear()
+            return None
+    return session['token_info'].get('access_token')    

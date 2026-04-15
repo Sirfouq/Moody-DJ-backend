@@ -3,7 +3,7 @@ import requests
 import time
 from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
 from flask_cors import CORS
-from spotify_api_comm import spotify_client_access_token,authorize_user_request,request_api_token_request,refresh_api_token_request
+from spotify_api_comm import access_client_token,authorize_user_request,request_api_token_request,check_status
 
 app = Flask(__name__)
 CORS(app=app,
@@ -19,34 +19,18 @@ def home():
     return render_template('basic_login.html')
 
 @app.route('/api/auth/status')
-def status_check():
-    token_info = session.get('token_info')
-    if not token_info:
-        return jsonify({"isLoggedIn": False})
-    now = time.time()
-    is_expired = token_info.get('expires_at',0) < now
-    if(is_expired):
-        refresh_token = token_info.get('refresh_token')
-        refresh_token_request = refresh_api_token_request(refresh_token=refresh_token)
-        try:
-            session['token_info'] = {
-            'access_token' : refresh_token_request.get('access_token'),
-            'expires_at' : now + refresh_token_request.get('expires_in'),
-            'scope' : refresh_token_request.get('scope'),
-            'refresh_token': refresh_token_request.get('refresh_token') or token_info.get('refresh_token')
-            }
-            return jsonify({"isLoggedIn": True})
-                
-        except:
-            session.clear()
-            return jsonify({"isLoggedIn": False})
-    return jsonify({"isLoggedIn": True})    
+def auth_check_status():
+    token = check_status()
+    if(token):
+        return jsonify({'isLoggedIn': True})
+    return jsonify({'isLoggedIn': False})
+
 
 
 
 @app.route('/api/artists/<artist_id>',methods = ['GET'])
 def get_artist(artist_id):
-    access_token = spotify_client_access_token()
+    access_token = access_client_token()
     url = f'https://api.spotify.com/v1/artists/{artist_id}'
     headers = {"Authorization": f"Bearer {access_token}"}
     request= requests.get(url = url,headers= headers)

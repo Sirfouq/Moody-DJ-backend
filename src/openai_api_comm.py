@@ -1,6 +1,6 @@
 from openai import OpenAI
 from dotenv import load_dotenv
-from src.util.searchQuerymodel import PlaylistRecommendation, SearchQuery, TrackRecommendation
+from src.util.searchQueryModel import PlaylistRecommendation, SearchQuery, TrackRecommendation
 from typing import Optional
 load_dotenv()
 
@@ -42,7 +42,7 @@ agent_prompt = {
 #     return "\n".join(parts)
 
 
-def searchquery_playlist_layer(
+def search_query_layer(
     user_input: str,
     genre: Optional[str] = None,
     artist: Optional[str] = None,
@@ -90,6 +90,6 @@ def searchquery_playlist_layer(
             type='track',
             limit=1,
         )
-        spotify_tracks_list.append(formatted_query.model_dump(exclude_none=True))
+        spotify_tracks_list.append(formatted_query)
 
     return spotify_tracks_list
