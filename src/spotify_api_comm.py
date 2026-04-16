@@ -5,11 +5,12 @@ import base64
 import time
 from flask import session
 from src.util.searchQueryModel import SearchQuery
-from openai_api_comm import search_query_layer
+from src.util.spotifyResponseModel import SpotifyResponseData
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 
 
+# Requests an app-level access token using client credentials flow
 def access_client_token():
     
     url = 'https://accounts.spotify.com/api/token'
@@ -24,6 +25,7 @@ def access_client_token():
     req = requests.post(url, headers=headers, data=body)
     return req.json()['access_token']
 
+# Builds the Spotify OAuth URL to redirect the user for login
 def authorize_user_request():
     scopes = ['playlist-read-private',
         'playlist-modify-private',
@@ -45,6 +47,7 @@ def authorize_user_request():
     auth_url = f"{url}?{urllib.parse.urlencode(params)}"
     return auth_url
 
+# Exchanges the authorization code for user access and refresh tokens
 def request_api_token_request(code : str , redirect_uri : str):
     auth_string = f'{CLIENT_ID}:{CLIENT_SECRET}'
     # print(auth_string)
@@ -64,6 +67,7 @@ def request_api_token_request(code : str , redirect_uri : str):
     req = requests.post(url=url,headers=headers,data=body)
     return req.json()
 
+# Refreshes an expired user access token using the refresh token
 def refresh_api_token_request(refresh_token :str):
     auth_string = f'{CLIENT_ID}:{CLIENT_SECRET}'
     # print(auth_string)
@@ -83,11 +87,45 @@ def refresh_api_token_request(refresh_token :str):
     req = requests.post(url=url,headers=headers,data=body)
     return req.json()
 
-def request_generated_list(spotify_tracks_list : list[SearchQuery]):
-    pass
+# Searches Spotify for each track query and returns a list of SpotifyResponseData
+def request_generated_list(spotify_tracks_list : list[SearchQuery],
+                           access_token :str):
+    if not access_token:
+        return None
+    headers = {"Authorization" : f"Bearer {access_token}"}
+    url = "https://api.spotify.com/v1/search"
+    results = []
+    for search_query in spotify_tracks_list:
+        params = {
+            'q': search_query.q,
+            'type' : search_query.type,
+            'limit' :search_query.limit
+        }
+        response = requests.get(url=url, 
+                                headers=headers,
+                                params=params)
+        if response.status_code != 200:
+            continue
+
+        items= response.json().get("tracks",{})\
+        .get("items",[])
+
+        if not items:
+            continue
+        
+        track = items[0]
+        track_data = SpotifyResponseData(name=track['name'],
+                                         artists= [artist['name'] for artist in track['artists']],
+                                         uri=track['uri'],
+                                         album_image_url=track['album']['images'][0]['url'] if track['album']['images'] else '',
+                                         duration_ms=track['duration_ms'])
+        results.append(track_data)
+    return results
+
     
 
 
+# Returns a valid user access token from session, refreshing if expired, or None if unavailable
 def check_status():
     token_info = session.get('token_info')
     if not token_info:
