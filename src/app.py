@@ -3,8 +3,8 @@ import requests
 import time
 from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
 from flask_cors import CORS
-from spotify_api_comm import access_client_token,authorize_user_request,request_api_token_request,check_status
-
+from spotify_api_comm import access_client_token,authorize_user_request,request_api_token_request,check_status,request_generated_list
+from openai_api_comm import search_query_layer
 app = Flask(__name__)
 CORS(app=app,
      supports_credentials=True,
@@ -24,8 +24,6 @@ def auth_check_status():
     if(token):
         return jsonify({'isLoggedIn': True})
     return jsonify({'isLoggedIn': False})
-
-
 
 
 @app.route('/api/artists/<artist_id>',methods = ['GET'])
@@ -60,6 +58,28 @@ def callback():
         }
         print({'Stored token' : session['token_info']})
         return redirect('http://127.0.0.1:5173')
+
+
+#****** FURTHER IMPLEMNTATIONS NEEDED FOR FINAL APP**********
+@app.route('/api/generate',methods = ['POST'])
+def generate_list():
+    access_token = check_status()
+    data = request.json
+    user_input = data.get('user_input')
+    genre = data.get('genre','')
+    artist = data.get('artist','')
+    if not access_token:
+        return jsonify({'error' : 'Not logged in'}),401
+    search_queries = search_query_layer(user_input=user_input,
+                                        genre=genre,
+                                        artist=artist)
+    results = request_generated_list(spotify_tracks_list=search_queries,
+                                     access_token=access_token)
+    return jsonify([track.model_dump() for track in results])
+
+    
+    
+
     
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)    
