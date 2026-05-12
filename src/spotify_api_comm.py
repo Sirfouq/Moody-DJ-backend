@@ -126,7 +126,7 @@ def request_generated_list(spotify_tracks_list : list[SearchQuery],
 
 
 # Returns a valid user access token from session, refreshing if expired, or None if unavailable
-def check_status():
+def return_token():
     token_info = session.get('token_info')
     if not token_info:
         return None

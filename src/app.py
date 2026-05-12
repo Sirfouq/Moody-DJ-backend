@@ -3,7 +3,7 @@ import requests
 import time
 from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
 from flask_cors import CORS
-from spotify_api_comm import access_client_token,authorize_user_request,request_api_token_request,check_status,request_generated_list
+from spotify_api_comm import access_client_token,authorize_user_request,request_api_token_request,return_token,request_generated_list
 from openai_api_comm import search_query_layer
 app = Flask(__name__)
 CORS(app=app,
@@ -20,11 +20,10 @@ def home():
 
 @app.route('/api/auth/status')
 def auth_check_status():
-    token = check_status()
-    if(token):
-        return jsonify({'isLoggedIn': True})
-    return jsonify({'isLoggedIn': False})
-
+    token = return_token()
+    if token:
+        return jsonify({'isLoggedIn': True, 'access_token': token})
+    return jsonify({'isLoggedIn': False}), 401
 
 @app.route('/api/artists/<artist_id>',methods = ['GET'])
 def get_artist(artist_id):
@@ -63,7 +62,7 @@ def callback():
 #****** FURTHER IMPLEMNTATIONS NEEDED FOR FINAL APP**********
 @app.route('/api/generate',methods = ['POST'])
 def generate_list():
-    access_token = check_status()
+    access_token = return_token()
     data = request.json
     user_input = data.get('user_input')
     genre = data.get('genre','')
