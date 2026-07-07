@@ -75,7 +75,7 @@ def search_query_layer(
     })
 
     response = client.responses.parse(
-        model="gpt-5-mini-2025-08-07",
+        model="gpt-5.4-mini",
         input=messages,
         text_format=PlaylistRecommendation
     )
