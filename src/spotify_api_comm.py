@@ -3,6 +3,7 @@ import requests
 import urllib.parse
 import base64
 import time
+import config
 from flask import session
 from src.util.searchQueryModel import SearchQuery
 from src.util.spotifyResponseModel import SpotifyResponseData
@@ -13,7 +14,7 @@ CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 # Requests an app-level access token using client credentials flow
 def access_client_token():
     
-    url = 'https://accounts.spotify.com/api/token'
+    url = config.SPOTIFY_TOKEN_URL
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
     }
@@ -35,11 +36,13 @@ def authorize_user_request():
         'user-modify-playback-state',
         'user-read-currently-playing',
         'user-top-read',
+        'user-read-email',
+        'user-read-private',
 ]
-    url = 'https://accounts.spotify.com/authorize'
+    url = config.SPOTIFY_AUTHORIZE_URL
     params = {
         'client_id': CLIENT_ID,
-        'redirect_uri': 'http://127.0.0.1:5000/api/callback',
+        'redirect_uri': config.SPOTIFY_REDIRECT_URI,
         'response_type': 'code',
         'scope': ' '.join(scopes)
 
@@ -53,7 +56,7 @@ def request_api_token_request(code : str , redirect_uri : str):
     # print(auth_string)
     auth_bytes = auth_string.encode('utf-8')
     auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
-    url = 'https://accounts.spotify.com/api/token'
+    url = config.SPOTIFY_TOKEN_URL
     headers = {
         'Authorization': f'Basic {auth_base64}',
         'Content-Type' : 'application/x-www-form-urlencoded' 
@@ -73,7 +76,7 @@ def refresh_api_token_request(refresh_token :str):
     # print(auth_string)
     auth_bytes = auth_string.encode('utf-8')
     auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
-    url = 'https://accounts.spotify.com/api/token'
+    url = config.SPOTIFY_TOKEN_URL
     headers = {
         'Authorization': f'Basic {auth_base64}',
         'Content-Type' : 'application/x-www-form-urlencoded' 
@@ -93,7 +96,7 @@ def request_generated_list(spotify_tracks_list : list[SearchQuery],
     if not access_token:
         return None
     headers = {"Authorization" : f"Bearer {access_token}"}
-    url = "https://api.spotify.com/v1/search"
+    url = config.SPOTIFY_SEARCH_URL
     results = []
     for search_query in spotify_tracks_list:
         params = {

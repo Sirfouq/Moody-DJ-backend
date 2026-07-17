@@ -1,14 +1,16 @@
 import os
 import requests
 import time
+import config
 from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
 from flask_cors import CORS
 from spotify_api_comm import access_client_token,authorize_user_request,request_api_token_request,return_token,request_generated_list
 from openai_api_comm import search_query_layer
+
 app = Flask(__name__)
 CORS(app=app,
      supports_credentials=True,
-     origins=['http://127.0.0.1:5173'],)
+     origins=[config.FRONTEND_URL],)
 
 app.secret_key = os.getenv('SECRET_KEY')
 
@@ -18,29 +20,45 @@ app.secret_key = os.getenv('SECRET_KEY')
 def home():
     return render_template('basic_login.html')
 
-@app.route('/api/auth/status')
+@app.route(config.API_AUTH_STATUS)
 def auth_check_status():
     token = return_token()
     if token:
         return jsonify({'isLoggedIn': True, 'access_token': token})
     return jsonify({'isLoggedIn': False}), 401
 
-@app.route('/api/artists/<artist_id>',methods = ['GET'])
+@app.route(f'{config.API_ARTISTS}/<artist_id>',methods = ['GET'])
 def get_artist(artist_id):
     access_token = access_client_token()
-    url = f'https://api.spotify.com/v1/artists/{artist_id}'
+    url = f'{config.SPOTIFY_ARTISTS_URL}/{artist_id}'
     headers = {"Authorization": f"Bearer {access_token}"}
     request= requests.get(url = url,headers= headers)
     return request.json()
 
-@app.route('/api/login', methods=['GET'])
+@app.route(config.API_LOGIN, methods=['GET'])
 def login():
     auth_url = authorize_user_request()
     return redirect(auth_url)
 
+@app.route(config.API_LOGOUT,methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'isLoggedIn' : False})
 
 
-@app.route('/api/callback',methods = ['GET'])
+
+@app.route(config.API_ME,methods = ['GET'])
+def fetchProfile():
+    token =  return_token()
+    if not token : 
+        return jsonify({'error': 'Not logged in'}),401
+    request_params = {
+        'url' : config.SPOTIFY_ME_URL,
+        'headers' : {"Authorization" : f'Bearer {token}'}}
+    response = requests.get(**request_params)
+    return response.json(),response.status_code
+
+@app.route(config.API_CALLBACK,methods = ['GET'])
 def callback():
     error = request.args.get('error')
     state = request.args.get('state')
@@ -48,7 +66,7 @@ def callback():
     if error:
          return render_template('error.html')
     elif code:
-        req = request_api_token_request(code=code,redirect_uri='http://127.0.0.1:5000/api/callback')
+        req = request_api_token_request(code=code,redirect_uri=config.SPOTIFY_REDIRECT_URI)
         session['token_info'] = {
             'access_token' : req.get('access_token'),
             'expires_at' :time.time() +req.get('expires_in'),
@@ -56,11 +74,11 @@ def callback():
             'refresh_token' : req.get('refresh_token')
         }
         print({'Stored token' : session['token_info']})
-        return redirect('http://127.0.0.1:5173')
+        return redirect(config.FRONTEND_URL)
 
 
 #****** FURTHER IMPLEMNTATIONS NEEDED FOR FINAL APP**********
-@app.route('/api/generate',methods = ['POST'])
+@app.route(config.API_GENERATE,methods = ['POST'])
 def generate_list():
     access_token = return_token()
     data = request.json
