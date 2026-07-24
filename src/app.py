@@ -21,7 +21,7 @@ IS_PRODUCTION = os.getenv('FLASK_ENV')== 'production'
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SECURE=IS_PRODUCTION,
-    SESSION_COOKIE_SAMESITE = 'None' if IS_PRODUCTION else 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax'
     )
 
 
