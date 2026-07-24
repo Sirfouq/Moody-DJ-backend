@@ -2,7 +2,7 @@ import os
 import requests
 import time
 from src import config
-from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
+from flask import Flask,jsonify,request,redirect ,session
 from flask_cors import CORS
 from src.spotify_api_comm import authorize_user_request,request_api_token_request,return_token,request_generated_list
 from src.openai_api_comm import search_query_layer
@@ -28,7 +28,7 @@ app.config.update(
 
 @app.route('/')
 def home():
-    return render_template('basic_login.html')
+    return redirect(f'{config.FRONTEND_URL}')
 
 @app.route(config.API_AUTH_STATUS)
 def auth_check_status():
