@@ -1,11 +1,11 @@
 import os
 import requests
 import time
-import config
+from src import config
 from flask import Flask,jsonify,request,redirect,render_template ,session, url_for
 from flask_cors import CORS
-from spotify_api_comm import access_client_token,authorize_user_request,request_api_token_request,return_token,request_generated_list
-from openai_api_comm import search_query_layer
+from src.spotify_api_comm import authorize_user_request,request_api_token_request,return_token,request_generated_list
+from src.openai_api_comm import search_query_layer
 
 app = Flask(__name__)
 CORS(app=app,
@@ -13,6 +13,16 @@ CORS(app=app,
      origins=[config.FRONTEND_URL],)
 
 app.secret_key = os.getenv('SECRET_KEY')
+if not app.secret_key :
+    raise RuntimeError('SECRET_KEY env variable is not set.')
+
+IS_PRODUCTION = os.getenv('FLASK_ENV')== 'production' 
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=IS_PRODUCTION,
+    SESSION_COOKIE_SAMESITE = 'None' if IS_PRODUCTION else 'Lax'
+    )
 
 
 
@@ -27,13 +37,7 @@ def auth_check_status():
         return jsonify({'isLoggedIn': True, 'access_token': token})
     return jsonify({'isLoggedIn': False}), 401
 
-@app.route(f'{config.API_ARTISTS}/<artist_id>',methods = ['GET'])
-def get_artist(artist_id):
-    access_token = access_client_token()
-    url = f'{config.SPOTIFY_ARTISTS_URL}/{artist_id}'
-    headers = {"Authorization": f"Bearer {access_token}"}
-    request= requests.get(url = url,headers= headers)
-    return request.json()
+
 
 @app.route(config.API_LOGIN, methods=['GET'])
 def login():
@@ -60,33 +64,39 @@ def fetchProfile():
 
 @app.route(config.API_CALLBACK,methods = ['GET'])
 def callback():
-    error = request.args.get('error')
     state = request.args.get('state')
+    if not state or state!= session.pop('oauth_state',None):
+        return jsonify({'error' : 'Invalid state parameter'}),403
+    if request.args.get('error'):
+         return redirect(f'{config.FRONTEND_URL}?error=auth_denied')
     code = request.args.get('code')
-    if error:
-         return render_template('error.html')
-    elif code:
-        req = request_api_token_request(code=code,redirect_uri=config.SPOTIFY_REDIRECT_URI)
-        session['token_info'] = {
+    if not code:
+        return redirect(f'{config.FRONTEND_URL}?error=missing_auth_code')
+    
+    req = request_api_token_request(code=code,redirect_uri=config.SPOTIFY_REDIRECT_URI)
+    if 'access_token' not in req:
+        return redirect(f'{config.FRONTEND_URL}?error=auth_failed')
+    session['token_info'] = {
             'access_token' : req.get('access_token'),
             'expires_at' :time.time() +req.get('expires_in'),
             'scope' : req.get('scope'),
             'refresh_token' : req.get('refresh_token')
         }
-        print({'Stored token' : session['token_info']})
-        return redirect(config.FRONTEND_URL)
+    return redirect(config.FRONTEND_URL)
 
 
 #****** FURTHER IMPLEMNTATIONS NEEDED FOR FINAL APP**********
 @app.route(config.API_GENERATE,methods = ['POST'])
 def generate_list():
     access_token = return_token()
-    data = request.json
-    user_input = data.get('user_input')
-    genre = data.get('genre','')
-    artist = data.get('artist','')
     if not access_token:
         return jsonify({'error' : 'Not logged in'}),401
+    data = request.json or {}
+    user_input = (data.get('user_input') or '').strip()
+    if not user_input or len(user_input) > 500:
+        return jsonify({'error': 'Invalid input'}), 400
+    genre = data.get('genre','')
+    artist = data.get('artist','')
     search_queries = search_query_layer(user_input=user_input,
                                         genre=genre,
                                         artist=artist)

@@ -3,7 +3,8 @@ import requests
 import urllib.parse
 import base64
 import time
-import config
+from src import config
+import secrets
 from flask import session
 from src.util.searchQueryModel import SearchQuery
 from src.util.spotifyResponseModel import SpotifyResponseData
@@ -17,17 +18,18 @@ def access_client_token():
     url = config.SPOTIFY_TOKEN_URL
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization' : _basic_auth_header()
     }
     body={
         'grant_type': 'client_credentials',
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET
     }
     req = requests.post(url, headers=headers, data=body)
     return req.json()['access_token']
 
 # Builds the Spotify OAuth URL to redirect the user for login
 def authorize_user_request():
+    state = secrets.token_urlsafe(16)
+    session['oauth_state'] = state
     scopes = ['playlist-read-private',
         'playlist-modify-private',
         'playlist-modify-public',
@@ -44,7 +46,8 @@ def authorize_user_request():
         'client_id': CLIENT_ID,
         'redirect_uri': config.SPOTIFY_REDIRECT_URI,
         'response_type': 'code',
-        'scope': ' '.join(scopes)
+        'scope': ' '.join(scopes),
+        'state' : state
 
     }
     auth_url = f"{url}?{urllib.parse.urlencode(params)}"
@@ -52,13 +55,9 @@ def authorize_user_request():
 
 # Exchanges the authorization code for user access and refresh tokens
 def request_api_token_request(code : str , redirect_uri : str):
-    auth_string = f'{CLIENT_ID}:{CLIENT_SECRET}'
-    # print(auth_string)
-    auth_bytes = auth_string.encode('utf-8')
-    auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
     url = config.SPOTIFY_TOKEN_URL
     headers = {
-        'Authorization': f'Basic {auth_base64}',
+        'Authorization': _basic_auth_header(),
         'Content-Type' : 'application/x-www-form-urlencoded' 
 
     }
@@ -72,13 +71,9 @@ def request_api_token_request(code : str , redirect_uri : str):
 
 # Refreshes an expired user access token using the refresh token
 def refresh_api_token_request(refresh_token :str):
-    auth_string = f'{CLIENT_ID}:{CLIENT_SECRET}'
-    # print(auth_string)
-    auth_bytes = auth_string.encode('utf-8')
-    auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
     url = config.SPOTIFY_TOKEN_URL
     headers = {
-        'Authorization': f'Basic {auth_base64}',
+        'Authorization': _basic_auth_header(),
         'Content-Type' : 'application/x-www-form-urlencoded' 
     }
 
@@ -88,6 +83,7 @@ def refresh_api_token_request(refresh_token :str):
     }
 
     req = requests.post(url=url,headers=headers,data=body)
+    req.raise_for_status()
     return req.json()
 
 # Searches Spotify for each track query and returns a list of SpotifyResponseData
@@ -145,7 +141,14 @@ def return_token():
             'scope' : refresh_token_request.get('scope'),
             'refresh_token': refresh_token_request.get('refresh_token') or token_info.get('refresh_token')
             }   
-        except:
+        except(requests.RequestException, KeyError,TypeError) as e:
+            print(f'Token refresh failed: {e}' )
             session.clear()
             return None
     return session['token_info'].get('access_token')    
+
+def _basic_auth_header():
+    auth_string = f'{CLIENT_ID}:{CLIENT_SECRET}'
+    auth_bytes = auth_string.encode('utf-8')
+    auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
+    return f'Basic {auth_base64}'

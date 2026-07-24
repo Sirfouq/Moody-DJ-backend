@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- App route paths (used in @app.route decorators) ---
 API_BASE = '/api'
