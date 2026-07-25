@@ -26,4 +26,4 @@ SPOTIFY_ARTISTS_URL = f'{SPOTIFY_API_BASE}/artists'
 
 
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://127.0.0.1:5173')
-SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:5000/api/callback')
+SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:5173/api/callback')

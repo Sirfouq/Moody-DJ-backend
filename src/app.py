@@ -3,14 +3,12 @@ import requests
 import time
 from src import config
 from flask import Flask,jsonify,request,redirect ,session
-from flask_cors import CORS
 from src.spotify_api_comm import authorize_user_request,request_api_token_request,return_token,request_generated_list
 from src.openai_api_comm import search_query_layer
 
 app = Flask(__name__)
-CORS(app=app,
-     supports_credentials=True,
-     origins=[config.FRONTEND_URL],)
+
+
 
 app.secret_key = os.getenv('SECRET_KEY')
 if not app.secret_key :

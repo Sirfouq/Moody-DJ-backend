@@ -1,5 +1,4 @@
 Flask==3.1.2
-Flask-Cors==3.0.10
 gunicorn==26.0.0
 openai==1.109.1
 pydantic==2.11.9
